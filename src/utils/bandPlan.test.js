@@ -8,7 +8,7 @@ describe('getBandForFreq', () => {
     expect(band.name).toBe('20m');
     expect(band.min).toBe(14000);
     expect(band.max).toBe(14350);
-    expect(band.segments.length).toBe(3); // CW, Data, SSB
+    expect(band.segments.length).toBe(4); // CW, Data, Data/RTTY (14.100–14.150), SSB
   });
 
   it('includes the split data segments on classic HF bands', () => {
@@ -105,6 +105,18 @@ describe('getModeFromFreq (after display segments added)', () => {
     expect(getModeFromFreq(14200000)).toBe('USB');
     expect(getModeFromFreq(21300000)).toBe('USB');
     expect(getModeFromFreq(28400000)).toBe('USB');
+  });
+
+  it('keeps the digital stretch below the US phone boundary as DATA (#1193)', () => {
+    // 14.100–14.150, 21.110–21.200 and 28.120–28.300 are CW/data for every US
+    // class; labelling them SSB made the privilege bar flag 14.105 as
+    // "outside Amateur Extra privileges".
+    expect(getModeFromFreq(14105000)).toBe('DATA');
+    expect(getModeFromFreq(14149000)).toBe('DATA');
+    expect(getModeFromFreq(14151000)).toBe('USB');
+    expect(getModeFromFreq(21150000)).toBe('DATA');
+    expect(getModeFromFreq(28200000)).toBe('DATA');
+    expect(getModeFromFreq(28301000)).toBe('USB');
     expect(getModeFromFreq(29600000)).toBe('FM');
   });
 });

@@ -85,6 +85,12 @@
   },
   {
     "min": 14100,
+    "max": 14150,
+    "mode": "DATA",
+    "desc": "20m Data / RTTY / beacons"
+  },
+  {
+    "min": 14150,
     "max": 14350,
     "mode": "USB",
     "desc": "20m SSB"
@@ -121,6 +127,12 @@
   },
   {
     "min": 21110,
+    "max": 21200,
+    "mode": "DATA",
+    "desc": "15m Data / RTTY"
+  },
+  {
+    "min": 21200,
     "max": 21450,
     "mode": "USB",
     "desc": "15m SSB"
@@ -157,6 +169,12 @@
   },
   {
     "min": 28120,
+    "max": 28300,
+    "mode": "DATA",
+    "desc": "10m Data / RTTY / beacons"
+  },
+  {
+    "min": 28300,
     "max": 29000,
     "mode": "USB",
     "desc": "10m SSB"

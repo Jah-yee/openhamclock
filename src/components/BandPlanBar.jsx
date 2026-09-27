@@ -57,12 +57,22 @@ const BandPlanBar = ({ freq }) => {
 
   // License-class privilege shading: kHz slices of each segment the configured
   // class may not transmit in. Empty for 'Other' (no restriction UI at all).
+  // Each slice remembers the segment's mode: the restriction is about that
+  // emission type here, not the class as such — an Extra may run CW/data at
+  // 14.105 even though phone there is out for everyone (#1193).
   const restricted = normalizeLicenseClass(licenseClass)
-    ? band.segments.flatMap((seg) => nonPrivilegedSlices(licenseClass, seg.min, seg.max, seg.mode))
+    ? band.segments.flatMap((seg) =>
+        nonPrivilegedSlices(licenseClass, seg.min, seg.max, seg.mode).map((slice) => ({
+          ...slice,
+          mode: classLabel(getSegmentClass(seg.mode)),
+        })),
+      )
     : [];
-  const restrictedTitle = restricted.length
-    ? t('app.bandPlan.restricted', { licenseClass: t(`station.settings.licenseClass.${licenseClass}`) })
-    : '';
+  const restrictedTitle = (slice) =>
+    t('app.bandPlan.restrictedMode', {
+      licenseClass: t(`station.settings.licenseClass.${licenseClass}`),
+      mode: slice.mode,
+    });
 
   return (
     <div className="band-plan-bar" aria-label={t('app.bandPlan.aria', { band: band.name })}>
@@ -91,7 +101,7 @@ const BandPlanBar = ({ freq }) => {
               left: `${pct(slice.min)}%`,
               width: `${pct(slice.max) - pct(slice.min)}%`,
             }}
-            title={`${restrictedTitle}: ${fmtMHz(slice.min)}–${fmtMHz(slice.max)} ${t('app.units.mhz')}`}
+            title={`${restrictedTitle(slice)}: ${fmtMHz(slice.min)}–${fmtMHz(slice.max)} ${t('app.units.mhz')}`}
           />
         ))}
         {/* Ticks at internal segment boundaries */}
