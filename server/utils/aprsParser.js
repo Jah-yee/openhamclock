@@ -1,9 +1,4 @@
 'use strict';
-// ┌─────────────────────────────────────────────────────────────────────┐
-// │ VERBATIM COPY of server/utils/aprsParser.js — do not edit here.     │
-// │ rig-bridge ships on its own and cannot require the server tree.     │
-// │ Edit the server file and copy it over; a guard test enforces this.  │
-// └─────────────────────────────────────────────────────────────────────┘
 /**
  * aprsParser — APRS position packet parser shared by the server (APRS-IS feed
  * and the cloud-relay endpoint) and rig-bridge (direct TNC path).
