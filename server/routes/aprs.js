@@ -5,6 +5,8 @@
 
 const net = require('net');
 
+const { parseMice, MICE_TYPES } = require('../utils/aprsMice');
+
 module.exports = function (app, ctx) {
   const { CONFIG, APP_VERSION, logDebug, logInfo, logWarn, logErrorOnce } = ctx;
 
@@ -256,12 +258,17 @@ module.exports = function (app, ctx) {
       const payload = line.substring(headerEnd + 1);
       const callsign = header.split('>')[0].split('-')[0].trim(); // Strip SSID for grouping
       const ssid = header.split('>')[0].trim(); // Keep full SSID for display
+      // Destination address (first path element) — Mic-E encodes latitude in it
+      const destination = (header.split('>')[1] || '').split(',')[0].trim();
 
       if (!callsign || callsign.length < 3) return null;
 
       // Position data type identifiers
       const dataType = payload.charAt(0);
       let lat, lon, symbolTable, symbolCode, comment, rest;
+      let speed = null,
+        course = null,
+        altitude = null;
 
       if (dataType === '!' || dataType === '=') {
         // Position without timestamp: !DDMM.MMN/DDDMM.MMW$...
@@ -289,24 +296,30 @@ module.exports = function (app, ctx) {
           symbolCode = rest.charAt(18);
           comment = rest.substring(19).trim();
         }
+      } else if (MICE_TYPES.has(dataType)) {
+        // Mic-E (Yaesu/Kenwood default): latitude from the destination address
+        const mice = parseMice(destination, payload);
+        if (!mice) return null;
+        ({ lat, lon, symbolTable, symbolCode, comment, speed, course, altitude } = mice);
       } else {
         return null; // Not a position packet
       }
 
       if (isNaN(lat) || isNaN(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
 
-      // Parse optional speed/course/altitude from comment
-      let speed = null,
-        course = null,
-        altitude = null;
-      const csMatch = comment?.match(/^(\d{3})\/(\d{3})/);
-      if (csMatch) {
-        course = parseInt(csMatch[1]);
-        speed = parseInt(csMatch[2]); // knots
+      // Parse optional speed/course/altitude from the comment (uncompressed formats)
+      if (speed == null) {
+        const csMatch = comment?.match(/^(\d{3})\/(\d{3})/);
+        if (csMatch) {
+          course = parseInt(csMatch[1]);
+          speed = parseInt(csMatch[2]); // knots
+        }
       }
-      const altMatch = comment?.match(/\/A=(\d{6})/);
-      if (altMatch) {
-        altitude = parseInt(altMatch[1]); // feet
+      if (altitude == null) {
+        const altMatch = comment?.match(/\/A=(\d{6})/);
+        if (altMatch) {
+          altitude = parseInt(altMatch[1]); // feet
+        }
       }
 
       const { tokens, cleanComment } = parseResourceTokens(comment);
