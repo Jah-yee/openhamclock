@@ -170,7 +170,6 @@ export function useLayer({ map, enabled, opacity, locator }) {
         if (res.ok) {
           const json = await res.json();
           setData(json);
-          setLastFetch(Date.now());
         }
       } catch (err) {
         console.error('[VOACAP Heatmap] Fetch error:', err);
