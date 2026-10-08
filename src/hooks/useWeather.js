@@ -201,7 +201,13 @@ const RETRY_DELAYS = [5000, 15000, 30000];
 // Settle window after a location change. Absorbs rapid DX tuning while keeping
 // time-to-first-weather under the 1-3s target.
 const DEBOUNCE_MS = 1500;
-const POLL_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours — matches server cache TTL
+// Weather is fetched by the browser straight from Open-Meteo (below), so this
+// interval is the only thing controlling freshness. Open-Meteo refreshes its
+// current conditions every 15 minutes; at this cadence an always-on kiosk
+// makes ~96 requests per location per day. The old 2 h value (left over from
+// a server-side cache that no longer exists on this path) let the DE panel go
+// hours stale on 24/7 displays (#1197, thanks brstiefel1).
+const POLL_INTERVAL = 15 * 60 * 1000;
 
 // Fetch weather directly from Open-Meteo
 // Each user's browser makes its own request — rate limits are per-IP, not per-server
