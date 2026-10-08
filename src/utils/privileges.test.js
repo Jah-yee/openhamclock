@@ -253,3 +253,29 @@ describe('inUsAmateurBand', () => {
     expect(inUsAmateurBand(146520)).toBe(true);
   });
 });
+
+describe('60 m is a band plus four channels, not a continuous range (FCC rules from 2026-02-13)', () => {
+  it('allows the 5351.5–5366.5 kHz band and the four channels for General and Extra', () => {
+    for (const cls of ['general', 'extra']) {
+      expect(canTransmit(cls, 5357, 'USB')).toBe(true); // inside the band
+      expect(canTransmit(cls, 5351.5, 'CW')).toBe(true);
+      expect(canTransmit(cls, 5366.5, 'CW')).toBe(true);
+      // channels: USB dial (centre − 1.5 kHz) and CW/data on the centre
+      for (const centre of [5332, 5348, 5373, 5405]) {
+        expect(canTransmit(cls, centre - 1.5, 'USB')).toBe(true);
+        expect(canTransmit(cls, centre, 'CW')).toBe(true);
+        expect(canTransmit(cls, centre, 'FT8')).toBe(true);
+      }
+    }
+  });
+
+  it('rejects the gaps between channels that the old continuous range allowed', () => {
+    for (const cls of ['general', 'extra']) {
+      expect(canTransmit(cls, 5340, 'USB')).toBe(false);
+      expect(canTransmit(cls, 5340, 'CW')).toBe(false);
+      expect(canTransmit(cls, 5369, 'USB')).toBe(false);
+      expect(canTransmit(cls, 5390, 'CW')).toBe(false);
+    }
+    expect(canTransmit('technician', 5357, 'USB')).toBe(false);
+  });
+});

@@ -9,8 +9,12 @@
  *   'phone' — phone/image (SSB, AM, FM)
  *
  * Simplifications (documented deliberately):
- *  - 60m is channelized (five USB/CW/data channels, 100 W ERP); it is encoded
- *    as the containing 5330–5405 kHz range for General/Extra.
+ *  - 60m (FCC rules effective 2026-02-13): a 5351.5–5366.5 kHz band (2.8 kHz
+ *    max bandwidth, 9.15 W ERP) plus four channels centred on 5332, 5348,
+ *    5373 and 5405 kHz (100 W ERP). Each channel is modelled from its USB
+ *    dial frequency (centre − 1.5 kHz) to the top of its 2.8 kHz occupancy,
+ *    so both a USB dial reading and a CW/data carrier on the centre pass.
+ *    Nothing in between — 5340 kHz is not an amateur frequency.
  *  - Power limits (e.g. 200 W for Technician 10m data, 30m) are not modeled.
  *  - The Advanced and Novice legacy classes are not offered; holders can pick
  *    General/Technician respectively for a conservative view, or Other.
@@ -30,7 +34,7 @@ export const LICENSE_CLASSES = ['other', 'technician', 'general', 'extra'];
 export const US_BAND_LIMITS = [
   { band: '160m', min_khz: 1800, max_khz: 2000 },
   { band: '80m', min_khz: 3500, max_khz: 4000 },
-  { band: '60m', min_khz: 5330, max_khz: 5406 },
+  { band: '60m', min_khz: 5330, max_khz: 5407 }, // top channel occupies up to 5406.4
   { band: '40m', min_khz: 7000, max_khz: 7300 },
   { band: '30m', min_khz: 10100, max_khz: 10150 },
   { band: '20m', min_khz: 14000, max_khz: 14350 },
@@ -46,6 +50,14 @@ export const US_BAND_LIMITS = [
 
 // Row helper: { class, band, min_khz, max_khz, modes }
 const row = (cls, band, min_khz, max_khz, modes) => ({ class: cls, band, min_khz, max_khz, modes });
+
+// 60 m — see the header note. Channel rows run from the USB dial frequency
+// (centre − 1.5 kHz) to centre + 1.4 kHz.
+const SIXTY_M_CHANNEL_CENTRES_KHZ = [5332, 5348, 5373, 5405];
+const rows60m = (cls) => [
+  row(cls, '60m', 5351.5, 5366.5, ['cw', 'data', 'phone']),
+  ...SIXTY_M_CHANNEL_CENTRES_KHZ.map((c) => row(cls, '60m', c - 1.5, c + 1.4, ['cw', 'data', 'phone'])),
+];
 
 // VHF/UHF (50 MHz and up): identical full privileges for Technician and above.
 const vhfRows = (cls) => [
@@ -70,7 +82,7 @@ export const PRIVILEGES = [
   row('general', '160m', 1800, 2000, ['cw', 'data', 'phone']),
   row('general', '80m', 3525, 3600, ['cw', 'data']),
   row('general', '80m', 3800, 4000, ['cw', 'phone']),
-  row('general', '60m', 5330, 5405, ['cw', 'data', 'phone']),
+  ...rows60m('general'),
   row('general', '40m', 7025, 7125, ['cw', 'data']),
   row('general', '40m', 7175, 7300, ['cw', 'phone']),
   row('general', '30m', 10100, 10150, ['cw', 'data']),
@@ -90,7 +102,7 @@ export const PRIVILEGES = [
   row('extra', '160m', 1800, 2000, ['cw', 'data', 'phone']),
   row('extra', '80m', 3500, 3600, ['cw', 'data']),
   row('extra', '80m', 3600, 4000, ['cw', 'phone']),
-  row('extra', '60m', 5330, 5405, ['cw', 'data', 'phone']),
+  ...rows60m('extra'),
   row('extra', '40m', 7000, 7125, ['cw', 'data']),
   row('extra', '40m', 7125, 7300, ['cw', 'phone']),
   row('extra', '30m', 10100, 10150, ['cw', 'data']),
