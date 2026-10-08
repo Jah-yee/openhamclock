@@ -75,6 +75,8 @@ export const RigProvider = ({ children, rigConfig }) => {
   const confirmedRelayState = useRef({ freq: 0, mode: '' });
   const optimisticTimers = useRef({});
   const OPTIMISTIC_TIMEOUT = 3000;
+  // Pause between a mode change and the confirming frequency re-send (#1195)
+  const TUNE_SETTLE_MS = 250;
 
   // Construct URL from config or default
   const rigUrl = buildRigUrl(rigConfig);
@@ -523,23 +525,29 @@ export const RigProvider = ({ children, rigConfig }) => {
 
       if (hz > 0) {
         // console.log(`[RigContext] Tuning to ${hz} Hz`);
-        setFreq(hz);
-
         // Only switch mode when autoMode is enabled (default: on).
         // When off, only the frequency changes — the radio keeps its current mode.
-        if (rigConfig?.autoMode !== false) {
-          // Determine mode: use spot mode if provided, otherwise look up from band plan
-          let targetMode = modeInput || getModeFromFreq(hz);
+        // Mode: the spot's mode if provided, otherwise the band plan's; generic
+        // modes (DATA, SSB) map to rig-specific forms (DATA-USB, USB/LSB), CW
+        // passes through — rig-listener handles the radio-specific command.
+        const targetMode = rigConfig?.autoMode !== false ? mapModeToRig(modeInput || getModeFromFreq(hz), hz) : null;
+        const modeChange = targetMode && targetMode !== rigState.mode ? targetMode : null;
 
-          // Map generic modes (DATA, SSB) to rig-specific forms (DATA-USB, USB/LSB).
-          // CW passes through unchanged — rig-listener handles the radio-specific command.
-          targetMode = mapModeToRig(targetMode, hz);
-
-          if (targetMode && targetMode !== rigState.mode) {
-            // console.log(`[RigContext] Setting Mode to ${targetMode}`);
-            setMode(targetMode);
+        // Mode first, then frequency, then the frequency once more (#1195).
+        // These used to fire concurrently; Yaesu rigs (FT-991A, FTDX10, FT-950)
+        // move the dial by ~1.4 kHz when the mode changes, so a mode command
+        // landing after the frequency left the radio close but not on the spot
+        // and a second click was needed. Sequencing the commands and re-sending
+        // the frequency after the mode has settled is what operators' own
+        // "mode, freq, mode" macros do.
+        (async () => {
+          if (modeChange) await setMode(modeChange);
+          await setFreq(hz);
+          if (modeChange) {
+            await new Promise((resolve) => setTimeout(resolve, TUNE_SETTLE_MS));
+            await setFreq(hz);
           }
-        }
+        })();
 
         // License-class privilege check (non-blocking): still tune, but warn
         // when the target freq+mode is outside the configured US license-class
