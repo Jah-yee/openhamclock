@@ -80,6 +80,16 @@ describe('parseAprsPacket', () => {
     expect(parseAprsPacket('K9XYZ-9>APRS:/99xx45z3858.49N/08415.25W>')).toBeNull();
   });
 
+  it('accepts the 000000z "no timestamp" placeholder (the one miss in an 11-hour RF comparison)', () => {
+    const s = parseAprsPacket(
+      'KF9UG-10>APDW18,KD9QDL-10,WIDE1,W8BLV,WIDE2*:}KK2BUD-10>APMI04,TCPIP,KF9UG-10*:@000000z4033.01N/08433.80W- KK2BUD DIGI Celina Ohio',
+    );
+    expect(s).not.toBeNull();
+    expect(s.ssid).toBe('KK2BUD-10');
+    expect(s.lat).toBeCloseTo(40.5502, 3);
+    expect(s.lon).toBeCloseTo(-84.5633, 3);
+  });
+
   it('parses a Mic-E beacon end to end', () => {
     const s = parseAprsPacket('N8TAG-12>SXUX4Y,WIDE1-1,WIDE2-1:`p+5l!![/`"6E}');
     expect(s.call).toBe('N8TAG');

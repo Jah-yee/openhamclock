@@ -102,9 +102,14 @@ function parsePositionBody(body) {
   return out;
 }
 
-/** "DDHHMMz" / "HHMMSSh" / "DDHHMM/" timestamps — only checked for shape. */
+/**
+ * "DDHHMMz" / "HHMMSSh" / "DDHHMM/" timestamps — only checked for shape.
+ * "000000z" is accepted: igates and some trackers send it as "no timestamp"
+ * (seen in the wild on third-party frames; direwolf accepts it too).
+ */
 function timestampLooksValid(s) {
   if (!/^\d{6}[zh/]$/.test(s)) return false;
+  if (s.startsWith('000000')) return true;
   const a = Number(s.slice(0, 2));
   const b = Number(s.slice(2, 4));
   const c = Number(s.slice(4, 6));
